@@ -1,8 +1,5 @@
-import bars
-import ticksDB
 import pandas as pd
-from abc import ABC, abstractmethod
-import numpy as np
+from abc import abstractmethod
 
 class labeler:
     '''
@@ -24,7 +21,7 @@ class labeler:
         raise NotImplementedError
     
 
-class barHorizionLabler(labeler):
+class barHorizonLabeler(labeler):
     '''
     This class is used to label bar data based on the bar horizon.
     '''
@@ -50,7 +47,7 @@ class barHorizionLabler(labeler):
         
         self.bar_horizon = bar_horizon
 
-    def label(self, eplison=0.1, inplace=True):
+    def label(self, epsilon=0.1, inplace=True):
         '''
         Label the bar data.
         '''
@@ -59,9 +56,9 @@ class barHorizionLabler(labeler):
 
         for i in range(len(self.bar_data) - self.bar_horizon):
             ret_vale = (self.bar_data.loc[i + self.bar_horizon, 'close'] / self.bar_data.loc[i, 'close']) - 1
-            if ret_vale > eplison:
+            if ret_vale > epsilon:
                 self.bar_data.loc[i, 'label'] = 1
-            elif ret_vale < -eplison:
+            elif ret_vale < -epsilon:
                 self.bar_data.loc[i, 'label'] = -1
             else:
                 self.bar_data.loc[i, 'label'] = 0            

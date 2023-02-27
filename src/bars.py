@@ -1,13 +1,7 @@
 import pandas as pd
-from abc import ABC, abstractmethod
-from datetime import datetime
-import sys
-sys.path.append('../')
-from fml.ticksDB import ticksDB, securities, ticks
-from sqlalchemy import create_engine, Column, Integer, String, DateTime, Float, ForeignKey, text, func
-from sqlalchemy import Column, Integer, String, DateTime, text, Float, ForeignKey, select, and_
-from sqlalchemy.orm import declarative_base, relationship, backref, sessionmaker, mapped_column
-from datetime import datetime
+from abc import abstractmethod
+from .ticksDB import ticks
+from sqlalchemy import text, select, and_
 
 class bars:
     '''

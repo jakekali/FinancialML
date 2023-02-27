@@ -4,3 +4,8 @@ fml/_pycache_/*
 data/*
 data-tickStory/*
 fml/__pycache__/*
+.vscode/*
+.idea/*
+*.pyc
+*.pyo
+

@@ -1,8 +1,7 @@
 import pandas as pd
 from sqlalchemy import create_engine
-from sqlalchemy import Column, Integer, String, DateTime, text, Float, ForeignKey, select
-from sqlalchemy.orm import declarative_base, relationship, backref, sessionmaker, mapped_column
-from datetime import datetime
+from sqlalchemy import Column, Integer, String, DateTime, Float, ForeignKey, select
+from sqlalchemy.orm import declarative_base, sessionmaker, mapped_column
 
 Base = declarative_base()
 
