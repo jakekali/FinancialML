@@ -34,6 +34,10 @@ jobs:
           --health-timeout 5s
           --health-retries 5
 
+        ports:
+          # Maps tcp port 5432 on service container to the host
+          - 5432:5432
+
     steps:
       - uses: actions/checkout@v3
       - uses: actions/setup-python@v4
@@ -45,7 +49,6 @@ jobs:
       - run: pip uninstall certifi
       - run: pip install certifi
       - run: pip install -r requirements.txt 
-      - run: docker run --rm --name lil-postgres -e POSTGRES_PASSWORD=password -d -v $HOME/srv/postgres:/var/lib/postgresql/data -p 5432:5432 postgres
 
 
       # ADJUST THIS: build your documentation into docs/.
