@@ -47,11 +47,12 @@ jobs:
       - run: pip uninstall certifi
       - run: pip install certifi
       - run: pip install -r requirements.txt 
-
+      - run: psql -U postgres createdb FML
 
       # ADJUST THIS: build your documentation into docs/.
       # We use a custom build script for pdoc itself, ideally you just run `pdoc -o docs/ ...` here.
       - run: PYTHONPATH=./src pdoc --math src -o docs
+  
 
 
       - uses: actions/upload-pages-artifact@v1
