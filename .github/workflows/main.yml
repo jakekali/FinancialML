@@ -45,7 +45,7 @@ jobs:
 
       # queries database with postgres client
       - name: Query database
-        run: psql -h postgres -d postgres_db -U postgres_user -c 'CREATE DATABASE FML;'
+        run: psql -h localhost -U postgres -c 'CREATE DATABASE FML;'
         env:
           # postgress password is required; alternatively, you can run:
           # `PGPASSWORD=postgres_password psql ...`
