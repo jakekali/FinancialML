@@ -8,7 +8,7 @@ class labeler:
 
     def __init__(self, bar_data):
         '''
-        :param bar_data: pandas.DataFrame, the bar data to be labeled
+        :param bar_data: pandas.DataFrame, the bar data to be labeled - test change
         '''
         self.bar_data = bar_data
         self.labels = None
