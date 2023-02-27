@@ -49,7 +49,7 @@ jobs:
         env:
           # postgress password is required; alternatively, you can run:
           # `PGPASSWORD=postgres_password psql ...`
-          PGPASSWORD: postgres_password
+          PGPASSWORD: password
 
       - uses: actions/checkout@v3
       - uses: actions/setup-python@v4
