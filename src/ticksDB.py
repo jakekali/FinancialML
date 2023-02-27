@@ -21,7 +21,11 @@ class ticksDB:
         Connect to the database using the engine provided in the constructor, and establish a session.
         '''
         if self.engine is None:
-            self.engine = create_engine('postgresql+psycopg2://postgres:password@localhost/FML')
+            try:
+                self.engine = create_engine('postgresql+psycopg2://postgres:password@localhost/FML')
+            except:
+                print('Could not connect to the database. Please provide an engine in the constructor.')
+                return None
         self.conn = self.engine.connect()
         Base.metadata.create_all(c.engine)
 
