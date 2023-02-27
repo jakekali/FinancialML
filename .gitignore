@@ -1,0 +1,6 @@
+*.Identifier
+*.csv
+fml/_pycache_/*
+data/*
+data-tickStory/*
+fml/__pycache__/*
