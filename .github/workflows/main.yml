@@ -17,8 +17,6 @@ jobs:
   # Build the documentation and upload the static HTML files as an artifact.
   build:
     runs-on: ubuntu-latest
-    container: node:10.18-jessie
-
 
     services:
       postgres:
