@@ -1,5 +1,50 @@
 import pandas as pd
 from abc import abstractmethod
+import multiprocessing as mp
+import datetime as dt
+
+def mpPandasObj(func,pdObj,numThreads=24,mpBatches=1,linMols=True,**kargs):
+    '''
+    Parallelize jobs, return a dataframe or series
+    + func: function to be parallelized. Returns a DataFrame
+    + pdObj[0]: Name of argument used to pass the molecule
+    + pdObj[1]: List of atoms that will be grouped into molecules
+    + kwds: any other argument needed by func
+    Example: df1=mpPandasObj(func,('molecule',df0.index),24,**kwds)
+    '''
+    import pandas as pd
+    #if linMols:parts=linParts(len(argList[1]),numThreads*mpBatches)
+    #else:parts=nestedParts(len(argList[1]),numThreads*mpBatches)
+    if linMols:parts=linParts(len(pdObj[1]),numThreads*mpBatches)
+    else:parts=nestedParts(len(pdObj[1]),numThreads*mpBatches)
+
+    jobs=[]
+    for i in range(1,len(parts)):
+        job={pdObj[0]:pdObj[1][parts[i-1]:parts[i]],'func':func}
+        job.update(kargs)
+        jobs.append(job)
+    if numThreads==1:out=processJobs_(jobs)
+    else: out=processJobs(jobs,numThreads=numThreads)
+    if isinstance(out[0],pd.DataFrame):df0=pd.DataFrame()
+    elif isinstance(out[0],pd.Series):df0=pd.Series()
+    else:return out
+    for i in out:df0=df0.append(i)
+    df0=df0.sort_index()
+    return df0
+
+def processJobs(jobs,task=None,numThreads=24):
+    # Run in parallel.
+    # jobs must contain a 'func' callback, for expandCall
+    if task is None:task=jobs[0]['func'].__name__
+    pool=mp.Pool(processes=numThreads)
+    outputs,out,time0=pool.imap_unordered(expandCall,jobs),[],time.time()
+    # Process asyn output, report progress
+    for i,out_ in enumerate(outputs,1):
+        out.append(out_)
+        reportProgress(i,len(jobs),time0,task)
+    pool.close();pool.join() # this is needed to prevent memory leaks
+    return out
+
 
 class labeler:
     '''
@@ -60,11 +105,17 @@ class barHorizonLabeler(labeler):
         for i in range(len(self.bar_data) - self.bar_horizon):
             ret_vale = (self.bar_data.loc[i + self.bar_horizon, 'close_price'] / self.bar_data.loc[i, 'close_price']) - 1
             if(debug):
+                self.up = 0
+                self.down = 0
                 self.rets_values.append(ret_vale)
             if ret_vale > epsilon:
+                if debug:
+                    self.up += 1
                 self.bar_data.loc[i, 'label'] = 1
             elif ret_vale < -epsilon:
                 self.bar_data.loc[i, 'label'] = -1
+                if debug:
+                    self.down += 1
             else:
                 self.bar_data.loc[i, 'label'] = 0            
 
@@ -77,6 +128,8 @@ class barHorizonLabeler(labeler):
 class tripleBarrierLabeler(labeler):
     '''
     This class is used to label bar data based on the triple barrier method.
+
+    Much of this is from the book Advances in Financial Machine Learning by Marcos Lopez de Prado
     '''
 
     def __init__(self, bar_data : pd.DataFrame):
@@ -138,6 +191,35 @@ class tripleBarrierLabeler(labeler):
 
         return out
 
+
+    def getEvents(self, close_data, tEvents, ptS1, trgt, minRet, numThreads, t1=False):
+        #) get target
+        trgt = trgt.loc[tEvents]
+        trgt = trgt[trgt > minRet]
+        #2) get t1 (max holding period)
+        if t1 is False:
+            t1 = pd.Series(pd.NaT, index=tEvents)
+        #3) form events object, apply stop loss on t1
+        side_ = pd.Series(1., index=trgt.index)
+        events = (pd.concat({'t1': t1, 'trgt': trgt, 'side': side_}, axis=1).dropna(subset=['trgt']))
+        df0=mpPandasObj(func=self.applyPtSlOnT1,pdObj=('molecule',events.index),
+                        numThreads=numThreads,close=close_data,events=events,
+                        ptSl=ptS1)
+        events['t1']=df0.dropna(how='all').min(axis=1) #pd.min ignores nan
+        events=events.drop('side',axis=1)
+        return events
+
+
+   
+
+    # multiprocessing snippet [20.7]
+
+
+    def addVerticalBarrier(self, tEvents, close, numDays=1):
+        t1=close.index.searchsorted(tEvents+pd.Timedelta(days=numDays))
+        t1=t1[t1<close.shape[0]]
+        t1=(pd.Series(close.index[t1],index=tEvents[:t1.shape[0]]))
+        return t1
     
 
 
