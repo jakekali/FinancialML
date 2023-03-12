@@ -118,10 +118,9 @@ class tripleBarrierLabeler(labeler):
         df0 = df0.ewm(span=span0).std()
         return df0
     
-    def label(self, close_data=None, upFactor=1, downFactor=1, horizon=60*7, binary=True):
+    def label(self, upFactor=1, downFactor=1, horizon=60*7, binary=True):
         ''' 
         Label the bar data.
-        :param close_data: pandas.DataFrame, the close price of the stock
         :param upFactor: float, the factor to multiply the daily volatility by to get the upper barrier
         :param downFactor: float, the factor to multiply the daily volatility by to get the lower barrier
         :param horizon: int, the number of bars to look forward for a vertical barrier
@@ -129,39 +128,47 @@ class tripleBarrierLabeler(labeler):
         :return: pandas.DataFrame, the labeled bar data
         '''
 
-        if close_data is None:
-            close_data = self.bar_data['close_price']
+        self.bar_data.insert(2, "Volatility", self.getDailyVolatility(), True)
+        self.bar_data.dropna(inplace=True)
+        self.bar_data.insert(3, "UpperBarrier", self.bar_data['close_price'] * (1 + self.bar_data['Volatility'] * upFactor), True)
+        self.bar_data.insert(4, "LowerBarrier", self.bar_data['close_price'] * (1 - self.bar_data['Volatility'] * downFactor), True)
 
-        daily_vol = self.getDailyVolatility(close_data)
-        daily_vol = daily_vol.reindex(close_data.index).ffill()
-
-        # Compute the upper and lower barriers
-        up_barrier = close_data * (1 + upFactor * daily_vol)
-        down_barrier = close_data * (1 - downFactor * daily_vol)
+        self.bar_data.reset_index(inplace=True, drop=True)
 
         for i in tqdm.tqdm(range(len(self.bar_data))):
-            # if the bar is the last bar, then there is no vertical barrier
+            # Loop through variables in the horizon, and see which one is hit first
 
-            # if the bar is not within the horizon, then there is a vertical barrier
-            # loop through the days within the horizon and see if it cross the upper or lower barrier
-            crossed = False
-            for j in range(i, i + horizon):
-                if j >= len(self.bar_data) - 1:
+            stopped = False
+
+            for j in range(i + 1, i + horizon):
+
+                # If we reach the end of the data, then we can't label this data point
+                if j >= len(self.bar_data):
                     break
-                if self.bar_data.iloc[j, 5] > up_barrier[i]:
+
+                if self.bar_data.loc[j, 'close_price'] >= self.bar_data.loc[i, 'UpperBarrier']:
                     self.bar_data.loc[i, 'label'] = 1
-                    crossed = True
-                    break
-                elif self.bar_data.iloc[j, 5] < down_barrier[i]:
-                    self.bar_data.loc[i, 'label'] = -1
-                    crossed = True
+                    stopped = True
                     break
 
-            # if the bar did not cross the upper or lower barrier, then it is a pass
-            if not crossed:
+                elif self.bar_data.loc[j, 'close_price'] <= self.bar_data.loc[i, 'LowerBarrier']:
+                    self.bar_data.loc[i, 'label'] = -1
+                    stopped = True
+                    break
+
+            if not stopped:
                 if binary:
                     self.bar_data.loc[i, 'label'] = 0
-                else:   
-                    self.bar_data.loc[i, 'label'] = self.bar_data.loc[i + horizon, 'close_price'] / self.bar_data.loc[i, 'close_price'] - 1
-        
+                else:
+                    self.bar_data.loc[i, 'label'] = self.bar_data.loc[i, 'close_price'] / self.bar_data.loc[i, 'open_price'] - 1
+
+        self.bar_data = self.bar_data.dropna()
+        return self.bar_data
+            
+
+
+
+
+
+
         return self.bar_data
