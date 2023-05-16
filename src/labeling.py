@@ -128,6 +128,39 @@ class tripleBarrierLabeler(labeler):
         :return: pandas.DataFrame, the labeled bar data
         '''
 
+        if not isinstance(upFactor, float):
+            raise TypeError('upFactor must be a float')
+        
+        if not isinstance(downFactor, float):
+            raise TypeError('downFactor must be a float')
+        
+        if not isinstance(horizon, int):
+            raise TypeError('horizon must be an integer')
+        
+        if not isinstance(binary, bool):
+            raise TypeError('binary must be a boolean')
+        
+        if horizon < 1:
+            raise ValueError('horizon must be greater than 0')
+        
+        if horizon > len(self.bar_data):
+            raise ValueError('horizon must be less than or equal to the number of bars')
+        
+        if upFactor < 0:
+            raise ValueError('upFactor must be greater than or equal to 0')
+        
+        if downFactor < 0:
+            raise ValueError('downFactor must be greater than or equal to 0')
+        
+        if not isinstance(self.bar_data, pd.DataFrame):
+            raise TypeError('bar_data must be a pandas.DataFrame')
+        
+        # check if the data is already labeled
+        if 'Volatility' in self.bar_data.columns:
+            self.bar_data.drop(columns=['Volatility', 'UpperBarrier', 'LowerBarrier'], inplace=True)
+            
+
+
         self.bar_data.insert(2, "Volatility", self.getDailyVolatility(), True)
         self.bar_data.dropna(inplace=True)
         self.bar_data.insert(3, "UpperBarrier", self.bar_data['close_price'] * (1 + self.bar_data['Volatility'] * upFactor), True)
